@@ -1,0 +1,10 @@
+{
+  "soli": {
+    "source": "github",
+    "repo_owner": "alea-institute",
+    "repo_name": "soli",
+    "branch": "1.0.0",
+    "path": "SOLI.owl",
+    "use_cache": true
+  }
+}

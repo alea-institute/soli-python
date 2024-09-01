@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - dev
+      - test
+    tags:
+      - '*'
+  pull_request:
+    branches:
+        - main
+        - master
+        - dev
+        - test
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-latest
+            target: x86_64
+          - runner: ubuntu-latest
+            target: x86
+          - runner: ubuntu-latest
+            target: aarch64
+          - runner: ubuntu-latest
+            target: armv7
+          - runner: ubuntu-latest
+            target: s390x
+          - runner: ubuntu-latest
+            target: ppc64le
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: |
+          sudo apt-get update --fix-missing
+          sudo apt-get install -y --no-install-recommends \
+            python3 \
+            python3-pip \
+            python3-venv \
+            pipx \
+            curl \
+            build-essential
+          pipx install poetry
+          pipx ensurepath
+      - name: Build distribution
+        run: |
+            poetry build
+      - name: Test with pytest
+        run: |
+            poetry install --no-root
+            PYTHONPATH=. poetry run pytest tests/
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.platform.runner }}-${{ matrix.platform.target }}
+          path: dist

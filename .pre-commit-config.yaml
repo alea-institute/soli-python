@@ -1,0 +1,26 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+    -   id: check-added-large-files
+    -   id: check-builtin-literals
+    -   id: check-merge-conflict
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: check-json
+    -   id: check-xml
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.3
+  hooks:
+    # run ruff check --fix
+    - id: ruff
+      args: [ --fix ]
+    - id: ruff-format
+- repo: https://github.com/gitleaks/gitleaks.git
+  rev: v8.18.4
+  hooks:
+    - id: gitleaks
+      args: ["--verbose"]
