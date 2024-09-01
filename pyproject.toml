@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "soli"
+name = "soli-python"
 version = "0.1.0"
 description = "Python library for SOLI, the Standard for Open Legal Information"
 authors = ["ALEA Institute <hello@aleainstitute.ai>"]

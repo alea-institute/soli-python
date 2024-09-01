@@ -23,7 +23,7 @@ SOLI is an open, CC-BY licensed standard designed to represent universal element
 You can install the SOLI Python library using pip:
 
 ```bash
-pip install soli
+pip install soli-python
 ```
 
 For the latest development version, you can install directly from GitHub:

@@ -31,7 +31,7 @@ pip install --upgrade https://github.com/alea-institute/soli-python/archive/refs
 ### PyPI (Coming Soon)
 
 ```bash
-pip install soli
+pip install soli-python
 ```
 
 
