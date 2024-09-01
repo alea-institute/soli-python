@@ -2,9 +2,9 @@
 
 ![SOLI Logo](https://openlegalstandard.org/assets/images/soli-intro-logo.png)
 
-[![PyPI version](https://badge.fury.io/py/soli.svg)](https://badge.fury.io/py/soli)
+[![PyPI version](https://badge.fury.io/py/soli-python.svg)](https://badge.fury.io/py/soli-python)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python Versions](https://img.shields.io/pypi/pyversions/soli.svg)](https://pypi.org/project/soli/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/soli-python.svg)](https://pypi.org/project/soli-python/)
 
 The SOLI Python Library provides a simple and efficient way to interact with the Standard for Open Legal Information (SOLI) ontology.
 
@@ -79,8 +79,4 @@ If you encounter any issues or have questions about using the SOLI Python librar
 
 ## Learn More
 
-To learn more about SOLI, its development, and how you can get involved, visit the [SOLI website](https://openlegalstandard.org/) or join the [SOLI community forum](https://openlegalstandard.org/forum/).
-
----
-
-SOLI - Connecting legal data with universal standards.
+To learn more about SOLI, its development, and how you can get involved, visit the [SOLI website](https://openlegalstandard.org/) or join the [SOLI community forum](https://discourse.openlegalstandard.org/).

@@ -28,7 +28,7 @@ You can install the SOLI Python library using `pip` from the following sources:
 pip install --upgrade https://github.com/alea-institute/soli-python/archive/refs/heads/main.zip
 ```
 
-### PyPI (Coming Soon)
+### PyPI
 
 ```bash
 pip install soli-python
