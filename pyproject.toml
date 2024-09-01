@@ -1,16 +1,38 @@
 [tool.poetry]
-name = "soli-python"
+name = "soli"
 version = "0.1.0"
 description = "Python library for SOLI, the Standard for Open Legal Information"
 authors = ["ALEA Institute <hello@aleainstitute.ai>"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://openlegalstandard.org/"
+repository = "https://github.com/alea-institute/soli-python"
+documentation = "https://openlegalstandard.org/docs/"
+keywords = ["legal", "information", "standard", "soli", "open"]
 
 # dist build configuration
 include = ["soli"]
 packages = [{ include = "soli" }]
 exclude = ["tests", "docs", "examples", "docker"]
 
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Legal Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: XML",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Utilities"
+]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0.0"
