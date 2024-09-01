@@ -457,6 +457,7 @@ class SOLI:
         return owl_buffer
 
     @staticmethod
+    @cache
     def get_ns_tag(ns: str, tag: str) -> str:
         """
         Get the namespace tag for an XML element.
@@ -468,7 +469,11 @@ class SOLI:
         Returns:
             str: The namespace tag.
         """
-        return f"{{{NSMAP.get(ns, " ")}}}{tag}"
+        # DO NOT use nested f-strings for this method; not supported in older Python versions.
+        if ns in NSMAP:
+            return "{%s}%s" % (NSMAP[ns], tag)
+        else:
+            return tag
 
     # pylint: disable=too-many-branches,too-many-statements
     def parse_owl_class(self, node: lxml.etree._Element) -> None:
