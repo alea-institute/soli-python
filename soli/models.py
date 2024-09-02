@@ -5,12 +5,11 @@ This module contains the OWLClass model and related pydantic models for the SOLI
 # pylint: disable=fixme,no-member,unsupported-assignment-operation,too-many-lines,too-many-public-methods
 
 # imports
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 # packages
 import lxml.etree
 from pydantic import BaseModel, Field
-
 
 # Default values for configuration
 NSMAP = {
@@ -335,6 +334,126 @@ class OWLClass(BaseModel):
 
         # return the markdown string
         return markdown
+
+    def to_jsonld(self) -> dict:
+        """
+        Convert the OWL class to a JSON-LD string.
+
+        Returns:
+            str: The JSON-LD string representing the OWL class.
+        """
+        # initialize the JSON-LD dictionary
+        # set up NSMAP -> @context
+        jsonld_data: dict[str, Any] = {
+            "@context": {
+                None: "https://soli.openlegalstandard.org/",
+                "dc": "http://purl.org/dc/elements/1.1/",
+                "v1": "http://www.loc.gov/mads/rdf/v1#",
+                "owl": "http://www.w3.org/2002/07/owl#",
+                "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+                "xsd": "http://www.w3.org/2001/XMLSchema#",
+                "soli": "https://soli.openlegalstandard.org/",
+                "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+                "skos": "http://www.w3.org/2004/02/skos/core#",
+                "xml": "http://www.w3.org/XML/1998/namespace",
+            },
+            "@id": self.iri,
+            "@type": "owl:Class",
+            "rdfs:label": self.label,
+        }
+
+        # add the isDefinedBy
+        if self.is_defined_by:
+            jsonld_data["rdfs:isDefinedBy"] = self.is_defined_by
+
+        # add the seeAlso
+        if self.see_also:
+            jsonld_data["rdfs:seeAlso"] = []
+            for see_also in self.see_also:
+                jsonld_data["rdfs:seeAlso"].append(see_also)
+
+        # add the comment
+        if self.comment:
+            jsonld_data["rdfs:comment"] = self.comment
+
+        # add the deprecated
+        if self.deprecated:
+            jsonld_data["owl:deprecated"] = self.deprecated
+
+        # add the prefLabel
+        if self.preferred_label:
+            jsonld_data["skos:prefLabel"] = self.preferred_label
+
+        # add the altLabels
+        if self.alternative_labels:
+            jsonld_data["skos:altLabel"] = []
+            for alt_label in self.alternative_labels:
+                jsonld_data["skos:altLabel"].append(alt_label)
+
+        # add translations
+        if self.translations:
+            for lang, translation in sorted(self.translations.items()):
+                jsonld_data["skos:altLabel"] = []
+                jsonld_data["skos:altLabel"].append(
+                    {"@value": translation, "@language": lang}
+                )
+
+        # add the subClassOf
+        if self.sub_class_of:
+            jsonld_data["rdfs:subClassOf"] = []
+            for sub_class_of in self.sub_class_of:
+                jsonld_data["rdfs:subClassOf"].append({"@id": sub_class_of})
+
+        # add skos hidden label
+        if self.hidden_label:
+            jsonld_data["skos:hiddenLabel"] = self.hidden_label
+
+        # add skos definition
+        if self.definition:
+            jsonld_data["skos:definition"] = self.definition
+
+        # add skos example
+        if self.examples:
+            jsonld_data["skos:example"] = []
+            for example in self.examples:
+                jsonld_data["skos:example"].append(example)
+
+        # add skos note
+        if self.notes:
+            jsonld_data["skos:note"] = []
+            for note in self.notes:
+                jsonld_data["skos:note"].append(note)
+
+        # add skos history note
+        if self.history_note:
+            jsonld_data["skos:historyNote"] = self.history_note
+
+        # add skos editorial note
+        if self.editorial_note:
+            jsonld_data["skos:editorialNote"] = self.editorial_note
+
+        # add skos in scheme
+        if self.in_scheme:
+            jsonld_data["skos:inScheme"] = self.in_scheme
+
+        # add dc identifier
+        if self.identifier:
+            jsonld_data["dc:identifier"] = self.identifier
+
+        # add dc description
+        if self.description:
+            jsonld_data["dc:description"] = self.description
+
+        # add dc source
+        if self.source:
+            jsonld_data["dc:source"] = self.source
+
+        # add v1 country
+        if self.country:
+            jsonld_data["v1:country"] = self.country
+
+        # return the JSON-LD dictionary
+        return jsonld_data
 
     def to_json(self) -> str:
         """
