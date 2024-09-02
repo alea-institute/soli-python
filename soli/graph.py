@@ -114,6 +114,7 @@ MAX_IRI_ATTEMPTS: int = 16
 LOGGER = get_logger(__name__)
 
 
+# pylint: disable=too-many-instance-attributes
 class SOLI:
     """
     SOLI (Standard for Open Legal Information) Python library
@@ -472,8 +473,8 @@ class SOLI:
         # DO NOT use nested f-strings for this method; not supported in older Python versions.
         if ns in NSMAP:
             return "{%s}%s" % (NSMAP[ns], tag)
-        else:
-            return tag
+
+        return tag
 
     # pylint: disable=too-many-branches,too-many-statements
     def parse_owl_class(self, node: lxml.etree._Element) -> None:
@@ -851,6 +852,12 @@ class SOLI:
         if iri.startswith("https://soli.openlegalstandard.org/"):
             return iri
 
+        if iri.startswith("soli:"):
+            iri = iri[len("soli:") :]
+
+        if iri.startswith("lmss:"):
+            iri = iri[len("lmss:") :]
+
         if iri.startswith("http://lmss.sali.org/"):
             iri = iri[len("http://lmss.sali.org/") :]
 
@@ -934,7 +941,7 @@ class SOLI:
                 [self[index] for index in self.label_to_index.get(alt_label, [])]
             )
 
-        return classes
+        return classes  # type: ignore
 
     def refresh(self) -> None:
         """
@@ -1402,14 +1409,16 @@ class SOLI:
         """
         if filter_by == "predicate":
             return [triple for triple in triples if triple[1] == value]
-        elif filter_by == "subject":
+
+        if filter_by == "subject":
             return [triple for triple in triples if triple[0] == value]
-        elif filter_by == "object":
+
+        if filter_by == "object":
             return [triple for triple in triples if triple[2] == value]
-        else:
-            raise ValueError(
-                "Invalid filter_by value. Must be 'predicate', 'subject', or 'object'."
-            )
+
+        raise ValueError(
+            "Invalid filter_by value. Must be 'predicate', 'subject', or 'object'."
+        )
 
     def get_triples_by_subject(self, subject: str) -> List[Tuple[str, str, str]]:
         """
@@ -1459,7 +1468,7 @@ class SOLI:
             str: The new IRI.
         """
 
-        for i in range(MAX_IRI_ATTEMPTS):
+        for _ in range(MAX_IRI_ATTEMPTS):
             # generate a new base uuid4 value
             base_value = uuid.uuid4()
 
@@ -1479,3 +1488,5 @@ class SOLI:
                 continue
 
             return f"https://soli.openlegalstandard.org/{base64_value}"
+
+        raise RuntimeError("Failed to generate a unique IRI.")
