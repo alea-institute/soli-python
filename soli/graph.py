@@ -671,7 +671,7 @@ class SOLI:
             if child.tag == self.get_ns_tag("dc", "title"):
                 self.title = child.text
             elif child.tag == self.get_ns_tag("dc", "description"):
-                self.description = child
+                self.description = child.text
 
     def parse_node(self, node: lxml.etree._Element) -> None:
         """
