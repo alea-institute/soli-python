@@ -25,8 +25,8 @@ print("sys.path", sys.path)
 project = "soli-python"
 copyright = "2024, ALEA Institute"
 author = "ALEA Institute (https://aleainstitute.ai)"
-release = "0.1.2"
-version = "0.1.2"
+release = "0.1.3"
+version = "0.1.3"
 master_doc = "index"
 language = "en"
 
@@ -67,7 +67,7 @@ html_theme_options = {
     "use_sidenotes": True,
     "collapse_navbar": True,
     "show_navbar_depth": 2,
-    "repository_url": "https://github.com/alea-institute/soli-api",
+    "repository_url": "https://github.com/alea-institute/soli-python",
     "repository_branch": "main",
     "path_to_docs": "sphinx",
     "use_issues_button": True,

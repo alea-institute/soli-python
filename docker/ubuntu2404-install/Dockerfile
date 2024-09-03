@@ -1,5 +1,8 @@
 FROM ubuntu:24.04
 
+# define package version
+ARG SOLI_VERSION=0.1.3
+
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -20,11 +23,11 @@ RUN python3 -m venv /app/.venv
 # install pytest into it
 RUN /app/.venv/bin/pip install pytest pytest-benchmark
 
-# copy the target/wheels/*.whl files
-COPY dist/*.whl /app
+# copy the SOLI_VERSION wheel:
+COPY dist/soli_python-${SOLI_VERSION}-py3-none-any.whl /app/
 
-# install the wheels
-RUN /app/.venv/bin/pip install /app/*.whl
+# install the wheels with extra 'search'
+RUN /app/.venv/bin/pip install /app/soli_python-${SOLI_VERSION}-py3-none-any.whl[search]
 
 # copy the tests directory
 COPY tests /app/tests
