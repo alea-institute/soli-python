@@ -6,6 +6,13 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+# import for path resolution for autodoc
+import pathlib
+import sys
+
+sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+
+# config
 project = "soli-python"
 copyright = "2024, ALEA Institute"
 author = "ALEA Institute (https://aleainstitute.ai)"
