@@ -186,6 +186,15 @@ def test_class_get(soli_graph):
     assert edmi is not None
     assert isinstance(edmi, OWLClass)
 
+    # get with prefixes
+    edmi = soli_graph["soli:R602916B1A80fDD28d392d3f"]
+    assert edmi is not None
+    assert isinstance(edmi, OWLClass)
+
+    edmi = soli_graph["lmss:R602916B1A80fDD28d392d3f"]
+    assert edmi is not None
+    assert isinstance(edmi, OWLClass)
+
     # test a good class by index
     class0 = soli_graph[0]
     assert class0 is not None
@@ -220,6 +229,14 @@ def test_class_json(soli_graph):
     edmi = soli_graph["R602916B1A80fDD28d392d3f"]
     edmi_json = edmi.to_json()
     assert '"label":"U.S. District Court - W.D. Michigan"' in edmi_json
+
+
+def test_class_jsonld(soli_graph):
+    # test the json representation
+    edmi = soli_graph["R602916B1A80fDD28d392d3f"]
+    edmi_jsonld = edmi.to_jsonld()
+    assert "rdfs:label" in edmi_jsonld
+    assert edmi_jsonld["rdfs:label"] == "U.S. District Court - W.D. Michigan"
 
 
 def test_class_xml(soli_graph):
