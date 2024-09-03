@@ -67,7 +67,7 @@ html_theme_options = {
     "use_sidenotes": True,
     "collapse_navbar": True,
     "show_navbar_depth": 2,
-    "repository_url": "https://github.com/alea-institute/soli-api",
+    "repository_url": "https://github.com/alea-institute/soli-python",
     "repository_branch": "main",
     "path_to_docs": "sphinx",
     "use_issues_button": True,

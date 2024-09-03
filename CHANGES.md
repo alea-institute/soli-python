@@ -1,3 +1,8 @@
+Version 0.1.3 (2024-09-03)
+---------------------------
+* Separate rapidfuzz dependency into optional [search] extra
+
+
 Version 0.1.2 (2024-09-02)
 ---------------------------
 * Added JSON-LD serialization support
