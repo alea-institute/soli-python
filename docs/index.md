@@ -34,6 +34,16 @@ pip install --upgrade https://github.com/alea-institute/soli-python/archive/refs
 pip install soli-python
 ```
 
+#### Search Extras
+
+**If you want to use the basic search functionality to run fuzzy searches on labels or definitions,
+you should install the library with the `[search]` extra:**
+
+```bash
+pip install soli-python[search]
+```
+
+
 
 
 ## Getting Started

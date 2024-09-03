@@ -14,6 +14,7 @@ from __future__ import annotations
 # imports
 import base64
 import hashlib
+import importlib.util
 import time
 import uuid
 from enum import Enum
@@ -24,7 +25,6 @@ from typing import Dict, List, Literal, Optional, Tuple
 # packages
 import httpx
 import lxml.etree
-import rapidfuzz
 
 # project imports
 from soli.config import (
@@ -112,6 +112,18 @@ MAX_IRI_ATTEMPTS: int = 16
 
 # Set up logger
 LOGGER = get_logger(__name__)
+
+
+# try to import rapidfuzz with importlib; log if not able to.
+try:
+    if importlib.util.find_spec("rapidfuzz") is not None:
+        import rapidfuzz
+    else:
+        LOGGER.warning("Disabling search functionality: rapidfuzz not found.")
+        rapidfuzz = None
+except ImportError as e:
+    LOGGER.warning("Failed to check for search functionality: %s", e)
+    rapidfuzz = None
 
 
 # pylint: disable=too-many-instance-attributes
@@ -1028,6 +1040,12 @@ class SOLI:
             List[Tuple[OWLClass, int | float]]: The list of search results with
                 the OWL class and the search score.
         """
+        # check if we can search
+        if rapidfuzz is None:
+            raise RuntimeError(
+                "search extra must be installed to use search functions: pip install soli-python[search]"
+            )
+
         # get search labels
         if not include_alt_labels:
             search_labels = tuple(self.label_to_index.keys())
@@ -1069,6 +1087,12 @@ class SOLI:
             List[Tuple[OWLClass, int | float]]: The list of search results with
                 the OWL class and the search score.
         """
+        # check if we can search
+        if rapidfuzz is None:
+            raise RuntimeError(
+                "search extra must be installed to use search functions: pip install soli-python[search]"
+            )
+
         # get definitions to search with zip pattern
         class_index, class_definitions = zip(
             *[

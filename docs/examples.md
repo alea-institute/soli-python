@@ -62,6 +62,9 @@ print(f"First class: {first_class.label}")
 
 ### Search by Label
 
+**Make sure that you have installed with the `[search]` extra to use the search functionality. See the [installation instructions](index.md#search-extras).**
+
+
 ```python
 # Search for classes with "SDNY" in the label
 results = soli.search_by_label("SDNY", limit=3)
