@@ -10,13 +10,23 @@
 import pathlib
 import sys
 
-sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
+DOCS_PATH = pathlib.Path(__file__).parent.resolve()
+PROJECT_PATH = DOCS_PATH.parent.resolve()
+print("DOCS_PATH", DOCS_PATH)
+print("PROJECT_PATH", PROJECT_PATH)
+
+# inject the project root dir into sys.path
+sys.path.insert(0, str(PROJECT_PATH))
+
+# we need to be able to import
+print("sys.path", sys.path)
 
 # config
 project = "soli-python"
 copyright = "2024, ALEA Institute"
 author = "ALEA Institute (https://aleainstitute.ai)"
-release = "0.1.0"
+release = "0.1.2"
+version = "0.1.2"
 master_doc = "index"
 language = "en"
 
