@@ -1,3 +1,9 @@
+Version 0.1.4 (2024-09-04)
+---------------------------
+* Add prefix search for typeahead/search bars (with optional trie-based search)
+* Enhanced sort order for _basic_search (search_by_label, search_by_definition)
+
+
 Version 0.1.3 (2024-09-03)
 ---------------------------
 * Separate rapidfuzz dependency into optional [search] extra

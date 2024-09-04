@@ -5,7 +5,7 @@ Python library for SOLI, the Standard for Open Legal Information
 # SPDX-License-Identifier: MIT
 # (c) 2024 ALEA Institute.
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = "ALEA Institute"
 __license__ = "MIT"
 __description__ = "Python library for SOLI, the Standard for Open Legal Information"
