@@ -110,20 +110,30 @@ DEFAULT_MAX_DEPTH: int = 16
 # IRI max generation attempt for safety.
 MAX_IRI_ATTEMPTS: int = 16
 
+# minimum length for prefix search
+MIN_PREFIX_LENGTH: int = 3
+
 # Set up logger
 LOGGER = get_logger(__name__)
 
 
-# try to import rapidfuzz with importlib; log if not able to.
+# try to import rapidfuzz and marisa_trie with importlib; log if not able to.
 try:
     if importlib.util.find_spec("rapidfuzz") is not None:
         import rapidfuzz
     else:
         LOGGER.warning("Disabling search functionality: rapidfuzz not found.")
         rapidfuzz = None
+
+    if importlib.util.find_spec("marisa_trie") is not None:
+        import marisa_trie
+    else:
+        LOGGER.warning("Disabling search functionality: marisa_trie not found.")
+        marisa_trie = None
 except ImportError as e:
     LOGGER.warning("Failed to check for search functionality: %s", e)
     rapidfuzz = None
+    marisa_trie = None
 
 
 # pylint: disable=too-many-instance-attributes
@@ -178,6 +188,8 @@ class SOLI:
         self.alt_label_to_index: Dict[str, List[int]] = {}
         self.class_edges: Dict[str, List[str]] = {}
         self._cached_triples: Tuple[Tuple[str, str, str], ...] = ()
+        self._label_trie: Optional[marisa_trie.Trie] = None
+        self._prefix_cache: Dict[str, List[OWLClass]] = {}
         self.triples: List[Tuple[str, str, str]] = []
 
         # load the ontology
@@ -770,6 +782,16 @@ class SOLI:
         # freeze triple tuples
         self._cached_triples = tuple(self.triples)
 
+        # now create the Trie for the labels in label_to_index and alt_label_to_index
+        if marisa_trie is not None:
+            all_labels = [
+                label
+                for label in list(self.label_to_index.keys())
+                + list(self.alt_label_to_index.keys())
+                if len(label) >= MIN_PREFIX_LENGTH
+            ]
+            self._label_trie = marisa_trie.Trie(all_labels)
+
     def get_subgraph(
         self, iri: str, max_depth: int = DEFAULT_MAX_DEPTH
     ) -> List[OWLClass]:
@@ -994,6 +1016,52 @@ class SOLI:
         end_time = time.time()
         LOGGER.info("Parsed SOLI ontology in %.2f seconds", end_time - start_time)
 
+    def search_by_prefix(self, prefix: str) -> List[OWLClass]:
+        """
+        Search for IRIs by prefix.
+
+        Args:
+            prefix (str): The prefix to search for.
+
+        Returns:
+            List[OWLClass]: The list of OWL classes with IRIs that start with the prefix.
+        """
+        # check for cache
+        if prefix in self._prefix_cache:
+            return self._prefix_cache[prefix]
+
+        # search in trie
+        if marisa_trie is not None:
+            # return in sorted by length ascending list
+            keys = sorted(
+                self._label_trie.keys(prefix),
+                key=lambda x: len(x),
+            )
+        else:
+            # search with pure python
+            keys = sorted(
+                [
+                    label
+                    for label in list(self.label_to_index.keys())
+                    + list(self.alt_label_to_index.keys())
+                    if label.startswith(prefix)
+                ],
+                key=lambda x: len(x),
+            )
+
+        # get the list of IRIs
+        iri_list = []
+        for key in keys:
+            iri_list.extend(self.label_to_index.get(key, []))
+            iri_list.extend(self.alt_label_to_index.get(key, []))
+
+        # materialize and cache
+        classes = [self[index] for index in iri_list]
+        self._prefix_cache[prefix] = classes
+
+        # return the classes
+        return classes
+
     @staticmethod
     @cache
     def _basic_search(
@@ -1015,14 +1083,18 @@ class SOLI:
             List[Tuple[str, int | float, int]]: The list of search results with
                 the string, the search score, and the index.
         """
-        return rapidfuzz.process.extract(  # type: ignore
-            query,
-            search_list,
-            scorer=rapidfuzz.fuzz.WRatio
-            if search_type == "string"
-            else rapidfuzz.fuzz.partial_token_set_ratio,
-            processor=rapidfuzz.utils.default_process,
-            limit=limit,
+        return sorted(
+            rapidfuzz.process.extract(  # type: ignore
+                query,
+                search_list,
+                scorer=rapidfuzz.fuzz.WRatio
+                if search_type == "string"
+                else rapidfuzz.fuzz.partial_token_set_ratio,
+                processor=rapidfuzz.utils.default_process,
+                limit=limit,
+            ),
+            # sort first by score, then by length of text
+            key=lambda x: (-x[1], len(x[0])),
         )
 
     def search_by_label(

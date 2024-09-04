@@ -42,8 +42,13 @@ from soli import SOLI
 # Initialize the SOLI client
 soli = SOLI()
 
+# Search by prefix
+results = soli.search_by_prefix("Mich")
+for owl_class in results:
+    print(f"Class: {owl_class.label}")
+
 # Search for a class by label
-results = soli.search_by_label("Contract")
+results = soli.search_by_label("Mich")
 for owl_class, score in results:
     print(f"Class: {owl_class.label}, Score: {score}")
 
@@ -68,6 +73,14 @@ We welcome contributions to the SOLI Python library! If you'd like to contribute
 5. Submit a pull request with a clear description of your changes
 
 For more information, see our [contribution guidelines](CONTRIBUTING.md).
+
+## SOLI API
+A public, freely-accessible API is available for the SOLI ontology.
+
+The API is hosted at [https://soli.openlegalstandard.org/](https://soli.openlegalstandard.org/).
+
+The source code for the API is available on GitHub at [https://github.com/alea-institute/soli-api](https://github.com/alea-institute/soli-api).
+
 
 ## License
 

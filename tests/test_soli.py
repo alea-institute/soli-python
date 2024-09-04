@@ -253,6 +253,13 @@ def test_all_formatters(soli_graph):
         assert c.to_owl_xml() is not None
 
 
+def test_search_prefix(soli_graph):
+    for c in soli_graph.search_by_prefix("Mich"):
+        assert c.label == "Michigan"
+        assert "US+MI" in c.alternative_labels
+        break
+
+
 def test_search_label(soli_graph):
     for c, score in soli_graph.search_by_label("Georgia"):
         assert "Georgia" in c.label
@@ -347,6 +354,12 @@ def test_benchmark_get_parents(benchmark, soli_graph):
     @benchmark
     def get_parents():
         return soli_graph.get_parents(pb_iri)
+
+
+def test_benchmark_search_prefix(benchmark, soli_graph):
+    @benchmark
+    def search_prefix():
+        return soli_graph.search_by_prefix("Mich")
 
 
 def test_benchmark_search_labels(benchmark, soli_graph):
