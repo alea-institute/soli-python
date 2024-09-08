@@ -189,7 +189,7 @@ For detailed information about the SOLI Python library API, please refer to the 
 
 ## Contributing
 
-Contributions to the SOLI Python library are welcome! Please see our [contribution guidelines](contributing.md) for more information. You can also contribute to the SOLI standard itself through the [SOLI GitHub repository](https://github.com/alea-institute/soli-python).
+Contributions to the SOLI Python library are welcome! Please see our [contribution guidelines](https://github.com/alea-institute/soli-python/blob/main/CONTRIBUTING.md) for more information.
 
 ## License
 
