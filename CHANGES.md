@@ -1,3 +1,7 @@
+Version 0.1.5 (2024-11-08)
+---------------------------
+* Adding support for LLM-backed (decoder) search, e.g., via OpenAI, Anthropic, VLLM, Together
+
 Version 0.1.4 (2024-09-04)
 ---------------------------
 * Add prefix search for typeahead/search bars (with optional trie-based search)

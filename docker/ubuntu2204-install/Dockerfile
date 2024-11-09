@@ -1,7 +1,7 @@
 FROM ubuntu:22.04
 
 # define package version
-ARG SOLI_VERSION=0.1.4
+ARG SOLI_VERSION=0.1.5
 
 # Avoid prompts from apt
 ENV DEBIAN_FRONTEND=noninteractive

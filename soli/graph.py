@@ -4,18 +4,23 @@ soli/graph.py - SOLI (Standard for Open Legal Information) Python library
 https://openlegalstandard.org/
 
 This module provides a Python library for working with SOLI (Standard for Open Legal Information) data.
+
+TODO: implement token caching layer in system prompt for search; need upstream support in alea-llm-client first
 """
 
-# pylint: disable=fixme,no-member,unsupported-assignment-operation,too-many-lines,too-many-public-methods
+# pylint: disable=fixme,no-member,unsupported-assignment-operation,too-many-lines,too-many-public-methods,invalid-name
 
 # future import for self-referencing type hints
 from __future__ import annotations
 
 # imports
+import asyncio
 import base64
 import hashlib
 import importlib.util
+import json
 import time
+import traceback
 import uuid
 from enum import Enum
 from functools import cache
@@ -25,6 +30,7 @@ from typing import Dict, List, Literal, Optional, Tuple
 # packages
 import httpx
 import lxml.etree
+from alea_llm_client import BaseAIModel
 
 # project imports
 from soli.config import (
@@ -98,7 +104,6 @@ SOLI_TYPE_IRIS = {
     SOLITypes.SYSTEM_IDENTIFIERS: "R8EoZh39tWmXCkmP2Xzjl6E",
 }
 
-
 OWL_THING = "http://www.w3.org/2002/07/owl#Thing"
 
 # Default cache directory for the ontology
@@ -110,12 +115,17 @@ DEFAULT_MAX_DEPTH: int = 16
 # IRI max generation attempt for safety.
 MAX_IRI_ATTEMPTS: int = 16
 
+# default max tokens to return from LLM
+DEFAULT_MAX_TOKENS: int = 1024
+
+# default max depth for parallel search
+DEFAULT_SEARCH_MAX_DEPTH = 2
+
 # minimum length for prefix search
 MIN_PREFIX_LENGTH: int = 3
 
 # Set up logger
 LOGGER = get_logger(__name__)
-
 
 # try to import rapidfuzz and marisa_trie with importlib; log if not able to.
 try:
@@ -130,6 +140,16 @@ try:
     else:
         LOGGER.warning("Disabling search functionality: marisa_trie not found.")
         marisa_trie = None
+
+    if importlib.util.find_spec("alea_llm_client") is not None:
+        import alea_llm_client
+        from alea_llm_client.llms.prompts.sections import (
+            format_prompt,
+            format_instructions,
+        )
+    else:
+        LOGGER.warning("Disabling search functionality: alea_llm_client not found.")
+        alea_llm_client = None
 except ImportError as e:
     LOGGER.warning("Failed to check for search functionality: %s", e)
     rapidfuzz = None
@@ -144,6 +164,7 @@ class SOLI:
     This class provides a Python library for working with SOLI (Standard for Open Legal Information) data.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         source_type: str = DEFAULT_SOURCE_TYPE,
@@ -152,6 +173,7 @@ class SOLI:
         github_repo_name: str = DEFAULT_GITHUB_REPO_NAME,
         github_repo_branch: str = DEFAULT_GITHUB_REPO_BRANCH,
         use_cache: bool = True,
+        llm: Optional[BaseAIModel] = None,
     ) -> None:
         """
         Initialize the SOLI ontology.
@@ -163,6 +185,7 @@ class SOLI:
             github_repo_name (str): The name of the GitHub repository.
             github_repo_branch (str): The branch of the GitHub repository.
             use_cache (bool): Whether to use the local cache
+            llm (Optional[BaseAIModel]): an alea_llm_client BaseAIModel instance for searching via decoder
 
         Returns:
             None
@@ -212,6 +235,20 @@ class SOLI:
         self.parse_owl(owl_buffer)
         end_time = time.time()
         LOGGER.info("Parsed SOLI ontology in %.2f seconds", end_time - start_time)
+
+        # try to initialize a model
+        self.llm: Optional[BaseAIModel] = None
+        if alea_llm_client is not None:
+            try:
+                if llm is None:
+                    self.llm = alea_llm_client.OpenAIModel(model="gpt-4o")
+                else:
+                    self.llm = llm
+                LOGGER.info("Initialized LLM model: %s", self.llm)
+            except Exception:  # pylint: disable=broad-except
+                LOGGER.warning(
+                    "Failed to initialize LLM model: %s", traceback.format_exc()
+                )
 
     @staticmethod
     def list_branches(
@@ -1035,7 +1072,7 @@ class SOLI:
             # return in sorted by length ascending list
             keys = sorted(
                 self._label_trie.keys(prefix),
-                key=lambda x: len(x),
+                key=len,
             )
         else:
             # search with pure python
@@ -1046,7 +1083,7 @@ class SOLI:
                     + list(self.alt_label_to_index.keys())
                     if label.startswith(prefix)
                 ],
-                key=lambda x: len(x),
+                key=len,
             )
 
         # get the list of IRIs
@@ -1185,6 +1222,210 @@ class SOLI:
 
         return results
 
+    def format_classes_for_llm(
+        self,
+        owl_classes: List[OWLClass],
+    ) -> str:
+        """
+        Format a list of OWL classes for an LLM.
+
+        Args:
+            owl_classes (List[OWLClass]): The list of OWL classes.
+
+        Returns:
+            str: The formatted LLM input.
+        """
+        return "\n".join(
+            json.dumps(
+                {
+                    k: v
+                    for k, v in {
+                        "iri": owl_class.iri,
+                        "label": owl_class.label,
+                        "preferred_label": owl_class.preferred_label,
+                        "definition": owl_class.definition,
+                        "alt_labels": owl_class.alternative_labels,
+                        "parents": [
+                            self[parent_iri].preferred_label or self[parent_iri].label
+                            for parent_iri in owl_class.sub_class_of
+                        ],
+                    }.items()
+                    if v
+                }
+            )
+            for owl_class in owl_classes
+        )
+
+    async def search_by_llm(
+        self,
+        query: str,
+        search_set: List[OWLClass],
+        limit: int = 10,
+        scale: int = 10,
+        include_reason: bool = False,
+    ) -> List[Tuple[OWLClass, int | float]]:
+        """
+        Search for an OWL class by LLM.
+
+        Args:
+            query (str): The query to search for.
+            search_set (List[OWLClass]): The list of OWL classes to search.
+            limit (int): The maximum number of results to return.
+            scale (int): The scale for the LLM relevancy scoring.
+            include_reason (bool): Whether to include the reason for the search.
+
+        Returns:
+            List[Tuple[OWLClass, int | float]]: The list of search results with
+                the OWL class and the search score.
+        """
+        # skip if we don't have llm
+        if self.llm is None:
+            raise RuntimeError(
+                "search extra must be installed to use llm search functions: pip install soli-python[search]"
+            )
+
+        # set up instructions based on args
+        instructions = [
+            "Think carefully about the intent and context of the QUERY.",
+            f"Score the relevance of the ITEMS above to the QUERY below on a scale from 1 to {scale}.",
+            "Only score items that are directly relevant to the query.",
+            f"Include up to the {limit} most relevant items.",
+            "Include a brief explanation for why you believe each item is relevant."
+            if include_reason
+            else "",
+            "Return the items identified by iri in order from most relevant to least relevant.",
+            "If there are no relevant items, return an empty list.",
+            "Respond in JSON.  Carefully adhere to the SCHEMA below.",
+        ]
+
+        # set up the schema
+        if include_reason:
+            schema = """{"results": [{"iri": string, "relevance": integer, "explanation": string}]}"""
+        else:
+            schema = """{"results": [{"iri": string, "relevance": integer}]}"""
+
+        # format the prompt
+        prompt = format_prompt(
+            {
+                "items": self.format_classes_for_llm(search_set),
+                "instructions": format_instructions(
+                    [
+                        instruction
+                        for instruction in instructions
+                        if len(instruction.strip()) > 0
+                    ]
+                ),
+                "query": query,
+                "schema": schema,
+            }
+        )
+
+        # get the response
+        try:
+            llm_response = await self.llm.json_async(
+                prompt,
+                system="You are a legal knowledge management platform searching for relevant items in a taxonomy.\n"
+                "Always respond in JSON according to SCHEMA.",
+                max_tokens=DEFAULT_MAX_TOKENS,
+            )
+            llm_response_data = llm_response.data
+
+            # parse the results
+            if isinstance(llm_response_data, dict) and "results" in llm_response_data:
+                llm_results = llm_response_data["results"]
+            elif isinstance(llm_response_data, list):
+                llm_results = llm_response_data
+            else:
+                llm_results = []
+
+            # filter and return the results
+            seen_iris = set()
+            search_results = []
+            for result in llm_results:
+                iri = result.get("iri", None)
+                if iri and iri not in seen_iris and iri in self.iri_to_index:
+                    seen_iris.add(iri)
+                    if include_reason:
+                        search_results.append(
+                            (
+                                self[iri],
+                                result.get("relevance", 0),
+                                result.get("explanation", ""),
+                            )
+                        )
+                    else:
+                        search_results.append((self[iri], result.get("relevance", 0)))
+
+            return sorted(search_results, key=lambda x: -x[1])[:limit]
+        except Exception as e:
+            LOGGER.error("Error searching with LLM: %s", traceback.format_exc())
+            raise RuntimeError("Error searching with LLM.") from e
+
+    async def parallel_search_by_llm(
+        self,
+        query: str,
+        search_sets: Optional[List[List[OWLClass]]] = None,
+        limit: int = 10,
+        scale: int = 10,
+        include_reason: bool = False,
+        max_depth: int = DEFAULT_SEARCH_MAX_DEPTH,
+    ) -> List[Tuple[OWLClass, int | float]]:
+        """
+        Parallel search using gather() pattern across one or more search sets.
+
+        Args:
+            query (str): The query to search for.
+            search_sets (List[List[OWLClass]]): The list of search sets to search; if None, use all classes.
+            limit (int): The maximum number of results to return.
+            scale (int): The scale for the LLM relevancy scoring.
+            include_reason (bool): Whether to include the reason for the search.
+            max_depth (int): The maximum depth to search for classes if search_sets is None.
+
+        Returns:
+            List[Tuple[OWLClass, int | float]]: The list of search results with
+                the OWL class and the search score.
+        """
+        # skip if we don't have llm
+        if self.llm is None:
+            raise RuntimeError(
+                "search extra must be installed to use llm search functions: pip install soli-python[search]"
+            )
+
+        # get the search sets
+        if search_sets is None:
+            search_sets = list(self.get_soli_branches(max_depth=max_depth).values())
+
+        # get the responses
+        try:
+            # gather across the search sets
+            search_set_results = await asyncio.gather(
+                *[
+                    self.search_by_llm(
+                        query,
+                        search_set,
+                        limit=limit,
+                        scale=scale,
+                        include_reason=include_reason,
+                    )
+                    for search_set in search_sets
+                ]
+            )
+
+            # flatten the results and sort again
+            search_results = sorted(
+                [
+                    search_result
+                    for search_set_result in search_set_results
+                    for search_result in search_set_result
+                ],
+                key=lambda x: -x[1],
+            )
+
+            return search_results[:limit]
+        except Exception as e:
+            LOGGER.error("Error searching with LLM: %s", traceback.format_exc())
+            raise RuntimeError("Error searching with LLM.") from e
+
     def __len__(self) -> int:
         """
         Get the number of classes in the SOLI ontology.
@@ -1254,6 +1495,20 @@ class SOLI:
         return self.get_children(
             SOLI_TYPE_IRIS[SOLITypes.COMMUNICATION_MODALITY], max_depth=max_depth
         )
+
+    def get_soli_branches(
+        self, max_depth: int = DEFAULT_MAX_DEPTH
+    ) -> Dict[str, List[OWLClass]]:
+        """
+        Get the SOLI branches in the SOLI ontology.
+
+        Returns:
+            List[OWLClass]: The list of SOLI branches.
+        """
+        return {
+            soli_type: self.get_children(soli_type_iri, max_depth=max_depth)
+            for soli_type, soli_type_iri in SOLI_TYPE_IRIS.items()
+        }
 
     def get_currencies(self, max_depth: int = DEFAULT_MAX_DEPTH) -> List[OWLClass]:
         """

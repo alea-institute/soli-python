@@ -25,8 +25,8 @@ print("sys.path", sys.path)
 project = "soli-python"
 copyright = "2024, ALEA Institute"
 author = "ALEA Institute (https://aleainstitute.ai)"
-release = "0.1.4"
-version = "0.1.4"
+release = "0.1.5"
+version = "0.1.5"
 master_doc = "index"
 language = "en"
 
