@@ -27,11 +27,9 @@ async def main():
     )
 
     print("\n\nmeta-llama/Llama-3.2-3B-Instruct-Turbo results:")
-    for x in await g.parallel_search_by_llm(
+    for x in await g.search_by_llm(
         example_text,
-        search_sets=[
-            g.get_areas_of_law(max_depth=1),
-        ],
+        search_set=g.get_areas_of_law(max_depth=1),
     ):
         print(x)
 
