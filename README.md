@@ -18,6 +18,9 @@ SOLI is an open, CC-BY licensed standard designed to represent universal element
 - Access detailed information about each class, including labels, definitions, and examples
 - Convert classes to OWL XML or Markdown format
 
+## Changelog
+The changelog can be found at [CHANGES.md](CHANGES.md).
+
 ## Installation
 
 You can install the SOLI Python library using pip:
@@ -57,6 +60,26 @@ areas_of_law = soli.get_areas_of_law()
 for area in areas_of_law:
     print(area.label)
 ```
+
+## Searching with an LLM
+
+```python
+# Search with an LLM
+async def search_example():
+    for result in await soli.parallel_search_by_llm(
+        "redline lease agreement",
+        search_sets=[
+            soli.get_areas_of_law(max_depth=1),
+            soli.get_player_actors(max_depth=2),
+        ],
+    ):
+        print(result)
+
+import asyncio
+asyncio.run(search_example())
+```
+
+LLM search uses the `alea_llm_client` to provide abstraction across multiple APIs and providers.
 
 ## Documentation
 
