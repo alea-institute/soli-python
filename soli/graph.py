@@ -245,11 +245,10 @@ class SOLI:
                 else:
                     self.llm = llm
                 LOGGER.info("Initialized LLM model: %s", self.llm)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 LOGGER.warning(
                     "Failed to initialize LLM model: %s", traceback.format_exc()
                 )
-                raise RuntimeWarning("Failed to initialize LLM model.") from e
 
     @staticmethod
     def list_branches(
